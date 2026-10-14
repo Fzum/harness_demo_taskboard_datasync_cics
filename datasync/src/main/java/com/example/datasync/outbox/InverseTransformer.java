@@ -23,7 +23,12 @@ final class InverseTransformer {
   private static final String TASK_DELETED = "TASK_DELETED";
   private static final Set<String> EVENT_TYPES =
       Set.of("TASK_CREATED", "TASK_UPDATED", TASK_DELETED);
-  private static final Pattern CONTROL_CHARACTERS = Pattern.compile("\\p{Cntrl}");
+
+  /**
+   * Every character the codec refuses in a record: the Unicode controls, C1 ones such as NEL
+   * included, not only the ASCII ones of {@code \p{Cntrl}}.
+   */
+  private static final Pattern CONTROL_CHARACTERS = Pattern.compile("\\p{Cc}");
 
   private InverseTransformer() {}
 

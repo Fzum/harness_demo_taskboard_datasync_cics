@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class InverseTransformerTest {
 
@@ -104,6 +105,20 @@ class InverseTransformerTest {
         .isEqualTo("First line second line");
   }
 
+  // Tab, carriage return, DEL, and the C1 controls NEL and APC, which text decoded with the wrong
+  // code page carries: the codec refuses every one of them in a record.
+  @ParameterizedTest
+  @ValueSource(strings = {"\t", "\r", "\u007f", "\u0085", "\u009f"})
+  void everyControlCharacterBecomesASpace(String control) {
+    String payload =
+        NEW_TASK.replace("Call back about", "Call back" + jsonEscape(control) + "about");
+
+    TskRecord record = InverseTransformer.toRecord(event(42, "TASK_UPDATED", payload));
+
+    assertThat(record.title()).isEqualTo("Call back about the invoice");
+    assertThat(TskRecordCodec.format(record)).hasSize(300);
+  }
+
   @Test
   void ignoresUnknownKeys() {
     String payload = NEW_TASK.replace("{", "{\"priority\": \"HIGH\", ");
@@ -166,6 +181,10 @@ class InverseTransformerTest {
   private static OutboxEvent event(long taskId, String eventType, String payload) {
     return new OutboxEvent(
         1, "TASK", taskId, eventType, payload, OutboxStatus.PENDING, 0, null, OCCURRED_AT, null);
+  }
+
+  private static String jsonEscape(String character) {
+    return "\\u%04x".formatted((int) character.charAt(0));
   }
 
   private static String pad(String value, int length) {
