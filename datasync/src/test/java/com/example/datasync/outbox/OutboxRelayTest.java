@@ -21,7 +21,9 @@ import com.example.datasync.task.TaskSource;
 import com.example.datasync.task.TaskStatus;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,8 +61,10 @@ class OutboxRelayTest {
     long id = db.createTask("Call back about the invoice");
     long eventId = db.eventIdsOf(id).getFirst();
     String key = HostKey.forTask(id);
+    Instant before = Instant.now().truncatedTo(ChronoUnit.MICROS);
 
     assertThat(relay.run()).isEqualTo(new RelayReport(1, 1, 0, 0, 0));
+    Instant after = Instant.now();
     assertThat(host.records())
         .containsExactly(
             TskRecordCodec.format(
@@ -77,7 +81,7 @@ class OutboxRelayTest {
     assertThat(event)
         .extracting(OutboxEvent::status, OutboxEvent::attempts, OutboxEvent::lastError)
         .containsExactly(OutboxStatus.PROCESSED, 1, null);
-    assertThat(event.processedAt()).isNotNull();
+    assertThat(event.processedAt()).isBetween(before, after); // stored in UTC, read back as UTC
     assertThat(db.task(id).hostId()).isEqualTo(key);
   }
 
