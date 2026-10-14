@@ -37,9 +37,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <!-- Spring Boot's test support initialises Mockito, which attaches its agent at run time;
-               without this flag Java 21 warns about it in every test run. -->
-          <argLine>@{argLine} -XX:+EnableDynamicAgentLoading</argLine>
+          <!-- Spring Boot's test support initialises Mockito, which attaches its agent at run time
+               and appends to the bootstrap class path; without these flags Java 21 warns about both
+               (dynamic agent loading, and class data sharing) in every test run. -->
+          <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
         </configuration>
       </plugin>
       <plugin>
