@@ -256,13 +256,16 @@ task reaches the host, its full snapshot carries the failed change too: the rela
 task's older FAILED events PROCESSED with LAST_ERROR `superseded by event <id>`, so that nobody
 retries an old snapshot over newer data.
 
-**What production would add.** The model assumes a single datasync instance. Several instances
-would need a scheduler lock such as ShedLock, or would claim events with `SELECT ... FOR UPDATE SKIP
-LOCKED`. A real gateway converts between EBCDIC and the database's code page, where field lengths
-count bytes, not characters. A change made in the Taskboard while an ETL run is loading can be
-overwritten in TASK until the relay has written it and the next run loads it again; re-checking
-the skip rule in the same transaction as each write would close that window. Host inconsistencies
-would raise an alert, not only a log line and a count.
+**What production would add.** In production the datasync and the backend use the same Db2
+database: `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD`
+point at it, and IBM's Db2 JDBC driver takes the place of H2. The model assumes a single datasync
+instance. Several instances would need a scheduler lock such as ShedLock, or would claim events
+with `SELECT ... FOR UPDATE SKIP LOCKED`. A real gateway converts between EBCDIC and the database's
+code page, where field lengths count bytes, not characters. A change made in the Taskboard while an
+ETL run is loading can be overwritten in TASK until the relay has written it and the next run
+loads it again; locking the task's row and re-checking the skip rule in the same transaction as
+each write would close that window. Host inconsistencies would raise an alert, not only a log
+line and a count.
 
 ### Sync API
 
