@@ -1,0 +1,7 @@
+* text=auto eol=lf
+/mvnw text eol=lf
+*.cmd text eol=crlf
+*.jar binary
+
+# Fixed-width host records (TSK-RECORD, 300 characters): the trailing padding is data.
+*.dat text eol=lf -whitespace
