@@ -38,7 +38,7 @@ public final class TaskboardDatabase {
     jdbc.sql("DELETE FROM TASK").update();
   }
 
-  /** POST /api/tasks: a new OPEN task from the Taskboard and its TASK_CREATED event. */
+  /** POST /api/tasks: a new OPEN task and its TASK_CREATED event; returns the task's ID. */
   public long createTask(String title) {
     Instant at = tick();
     TaskData task =
@@ -48,7 +48,7 @@ public final class TaskboardDatabase {
     return id;
   }
 
-  /** PUT /api/tasks/{id}: changes the task and writes its TASK_UPDATED event. */
+  /** PUT /api/tasks/{id}: changes the task and writes TASK_UPDATED; returns the event's ID. */
   public long updateTask(long id, UnaryOperator<TaskData> change) {
     Instant at = tick();
     TaskData before = task(id);
@@ -80,7 +80,10 @@ public final class TaskboardDatabase {
     return insertEvent(id, "TASK_UPDATED", snapshot(id, updated, at));
   }
 
-  /** DELETE /api/tasks/{id}: deletes the task and writes TASK_DELETED with its last state. */
+  /**
+   * DELETE /api/tasks/{id}: deletes the task and writes TASK_DELETED with its last state; returns
+   * the event's ID.
+   */
   public long deleteTask(long id) {
     Instant at = tick();
     TaskData last = task(id);
