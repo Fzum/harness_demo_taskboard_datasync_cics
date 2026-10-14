@@ -64,7 +64,22 @@ SPRING_DATASOURCE_URL='jdbc:h2:tcp://localhost:19092/mem:taskboard;MODE=DB2' ./m
 ```
 
 `DB_CLOSE_DELAY=-1` keeps the in-memory database alive for as long as the H2 server runs. Without
-the backend, insert tasks and outbox events with SQL, as the backend would.
+the backend, change tasks with SQL the way the backend does: the TASK row together with a PENDING
+outbox event that carries the task's snapshot. For example, open H2's shell on the database:
+
+```sh
+java -cp ~/.m2/repository/com/h2database/h2/2.4.240/h2-2.4.240.jar org.h2.tools.Shell -url 'jdbc:h2:tcp://localhost:19092/mem:taskboard;MODE=DB2' -user sa
+```
+
+and create a task, which the next relay run writes to the host under `T` plus its ID:
+
+```sql
+INSERT INTO TASK (TITLE, STATUS, SOURCE, CREATED_AT, UPDATED_AT)
+VALUES ('Call back about the invoice', 'OPEN', 'TASKBOARD', TIMESTAMP '2026-10-14 08:15:30', TIMESTAMP '2026-10-14 08:15:30');
+INSERT INTO OUTBOX_EVENT (AGGREGATE_TYPE, AGGREGATE_ID, EVENT_TYPE, PAYLOAD, CREATED_AT)
+SELECT 'TASK', ID, 'TASK_CREATED', '{"taskId":' || ID || ',"hostId":null,"title":"Call back about the invoice","description":null,"status":"OPEN","assignee":null,"dueDate":null,"source":"TASKBOARD","occurredAt":"2026-10-14T08:15:30Z"}', UPDATED_AT
+FROM TASK WHERE ID = (SELECT MAX(ID) FROM TASK);
+```
 
 ## Configuration
 
