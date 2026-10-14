@@ -87,13 +87,46 @@ class EtlJobTest {
     long id = db.taskIdOf("H000001001");
     Object createdAt = db.taskRow(id).get("CREATED_AT");
     Instant later = LAST_UPDATE.plusSeconds(3600);
-    host.put(hostRecord("H000001001").status(Status.DONE).user("BKRAUSE").lastUpdate(later).line());
+    host.put(
+        hostRecord("H000001001")
+            .title("Clarify two returned direct debits")
+            .description("The bank returned the November instalment as well")
+            .status(Status.DONE)
+            .user("BKRAUSE")
+            .dueDate(LocalDate.of(2026, 11, 30))
+            .lastUpdate(later)
+            .line());
 
     assertThat(etl.run()).isEqualTo(new EtlReport(2, 0, 1, 1, 0, 0, 0, 0));
     assertThat(db.task(id))
-        .extracting(TaskData::status, TaskData::assignee, TaskData::updatedAt)
-        .containsExactly(TaskStatus.DONE, "bkrause", later);
+        .isEqualTo(
+            new TaskData(
+                "H000001001",
+                "Clarify two returned direct debits",
+                "The bank returned the November instalment as well",
+                TaskStatus.DONE,
+                "bkrause",
+                LocalDate.of(2026, 11, 30),
+                TaskSource.HOST,
+                later));
     assertThat(db.taskRow(id).get("CREATED_AT")).isEqualTo(createdAt);
+  }
+
+  @Test
+  void anUpdateClearsWhatTheHostHasCleared() {
+    host.put(
+        hostRecord("H000001001")
+            .description("The bank returned the October instalment")
+            .user("AMUELLER")
+            .dueDate(LocalDate.of(2026, 10, 31))
+            .line());
+    etl.run();
+    host.put(hostRecord("H000001001").description("").user("").dueDate(null).line());
+
+    assertThat(etl.run().updated()).isEqualTo(1);
+    assertThat(db.task(db.taskIdOf("H000001001")))
+        .extracting(TaskData::description, TaskData::assignee, TaskData::dueDate)
+        .containsOnlyNulls();
   }
 
   @Test
