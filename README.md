@@ -176,7 +176,7 @@ flowchart LR
 | E6 | The ETL writes TASK only, never OUTBOX_EVENT, so its loads are never echoed back to the host |
 | E7 Report | Every run reports what it did with the records it read |
 
-Each record read is counted exactly once more, so `read` is the sum of the others:
+Every record read lands in exactly one of the other counts, so `read` is their sum:
 
 | Count | Meaning |
 |---|---|
@@ -278,8 +278,8 @@ line and a count.
 | `POST /api/sync/inconsistencies/{eventId}/retry` | Sets the FAILED event back to PENDING with ATTEMPTS 0 and returns it; 404 (problem+json) if no FAILED event has this id |
 | `GET /actuator/health` | The app and its database only (components such as `db`, `diskSpace` and `ping`): DOWN without the database, but UP while the host is down. Host problems show in the status |
 
-A run on request waits for a scheduled run in progress, so runs never overlap. The status during an
-outage:
+A run on request waits for a scheduled run of the same job in progress, so two runs of a job never
+overlap. The status during an outage:
 
 ```json
 {
@@ -308,9 +308,9 @@ outage:
 }
 ```
 
-The relay's report counts each event it read once more: `processed` (written to the host),
-`deferred` (a transient error, it stays PENDING), `failed` (now FAILED) and `skipped` (an earlier
-event of its task was deferred in this run).
+In the relay's report, every event read lands in exactly one of the other counts: `processed`
+(written to the host), `deferred` (a transient error, it stays PENDING), `failed` (now FAILED) or
+`skipped` (an earlier event of its task was deferred in this run).
 
 ### The CICS host simulator
 
@@ -422,10 +422,10 @@ test, plays the CICS host with switches for outages, rejections and slow answers
 |---|---|
 | `TskRecordCodecTest` | Parse, format, padding, round trips, invalid records, values too long, the layout against the copybook |
 | `HostRecordTransformerTest`, `InverseTransformerTest` | Every rule of both transformations, edge cases, permanent errors |
-| `EtlJobTest` | The ETL against H2: insert, update, unchanged, X deletes, the skip rule including pending deletes, T keys, orphaned and rejected records, UTC timestamps, no outbox writes |
+| `EtlJobTest` | The ETL against H2: insert, update of every column, unchanged, X deletes, the skip rule including pending deletes and changes the relay delivers during the extract, T keys, orphaned and rejected records, UTC timestamps, no outbox writes |
 | `OutboxRelayTest` | The relay: success with HOST_ID, retries up to FAILED, permanent errors, per-task order, FAILED not blocking, superseded events, batch size |
 | `CicsHostClientTest` | The HTTP client against the stub: RC=00, RC=12, 5xx, other answers, unreachable host, timeouts |
-| `SyncControllerTest`, `SchedulingTest`, `RunTrackerTest` | The sync API with problem+json errors and the retry, health during an outage, both schedules at start-up on two threads |
+| `SyncControllerTest`, `SchedulingTest`, `RunTrackerTest` | The sync API with problem+json errors and the retry, health during an outage, both schedules at start-up on two threads and their default intervals |
 | `cics-host-simulator`: `TskRecordTest`, `CicsProgramControllerTest`, `AdminControllerTest` | The simulator's record check and layout, TSKBRWS, TSKUPDT, the admin API and the outage |
 
 Run one test class or one test method:

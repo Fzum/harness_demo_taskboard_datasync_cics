@@ -1,8 +1,10 @@
 package com.example.datasync.etl;
 
 /**
- * What an ETL run did with the records it read (E7). Each record read is counted once more:
+ * What an ETL run did with the records it read (E7). Every record read lands in exactly one of the
+ * other counts, so {@code read} is their sum.
  *
+ * @param read the records TSKBRWS returned
  * @param inserted a new task from the host
  * @param updated a task that differed from its record
  * @param unchanged a task that already matched its record, or a deleted record without a task

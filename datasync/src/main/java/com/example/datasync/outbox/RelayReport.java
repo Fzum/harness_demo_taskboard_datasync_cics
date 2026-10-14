@@ -1,8 +1,10 @@
 package com.example.datasync.outbox;
 
 /**
- * What a relay run did with the PENDING events it read. Each event read is counted once more:
+ * What a relay run did with the PENDING events it read. Every event read lands in exactly one of
+ * the other counts, so {@code read} is their sum.
  *
+ * @param read the PENDING events the run loaded, at most one batch
  * @param processed written to the host, now PROCESSED
  * @param deferred a transient error; the event stays PENDING for the next run
  * @param failed now FAILED, a host inconsistency
