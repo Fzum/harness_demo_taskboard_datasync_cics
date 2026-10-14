@@ -186,6 +186,9 @@ class SyncControllerTest {
     assertThat(mvc.get().uri("/actuator/health"))
         .hasStatusOk()
         .bodyJson()
-        .isLenientlyEqualTo("{\"status\": \"UP\"}");
+        .isLenientlyEqualTo(
+            """
+            {"status": "UP", "components": {"db": {"status": "UP"}, "ping": {"status": "UP"}}}
+            """);
   }
 }

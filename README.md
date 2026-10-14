@@ -258,7 +258,7 @@ would raise an alert, not only a log line and a count.
 | `POST /api/sync/outbox/run` | Runs the relay now and returns the run with its report |
 | `GET /api/sync/inconsistencies` | The FAILED events, oldest first |
 | `POST /api/sync/inconsistencies/{eventId}/retry` | Sets the FAILED event back to PENDING with ATTEMPTS 0 and returns it; 404 (problem+json) if no FAILED event has this id |
-| `GET /actuator/health` | The app and its database only: it stays UP while the host is down. Host problems show in the status |
+| `GET /actuator/health` | The app and its database only (components such as `db`, `diskSpace` and `ping`): DOWN without the database, but UP while the host is down. Host problems show in the status |
 
 A run on request waits for a scheduled run in progress, so runs never overlap. The status during an
 outage:
