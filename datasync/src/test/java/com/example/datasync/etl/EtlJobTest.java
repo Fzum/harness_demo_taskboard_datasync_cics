@@ -150,6 +150,19 @@ class EtlJobTest {
   }
 
   @Test
+  void aChangeTheRelayDeliversDuringTheExtractIsNotOverwrittenWithTheOlderRecord() {
+    host.put(hostRecord("H000001001").line());
+    etl.run();
+    long id = db.taskIdOf("H000001001");
+    long event = db.updateTask(id, task -> retitled(task, "Changed in the Taskboard"));
+    // TSKBRWS has read the record before the change when the relay delivers it
+    host.whileBrowsing(() -> db.setEventStatus(event, OutboxStatus.PROCESSED, 1, null));
+
+    assertThat(etl.run()).isEqualTo(new EtlReport(1, 0, 0, 0, 0, 1, 0, 0));
+    assertThat(db.task(id).title()).isEqualTo("Changed in the Taskboard");
+  }
+
+  @Test
   void aTaskboardTaskIsSkippedByItsTaskIdWhileItsPayloadHasNoHostId() {
     long id = db.createTask("Call back");
     db.updateTask(id, task -> retitled(task, "Call back about the invoice"));

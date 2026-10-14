@@ -50,6 +50,9 @@ public class EtlJob {
 
   public EtlReport run() {
     Map<Outcome, Integer> outcomes = new EnumMap<>(Outcome.class);
+    // E4 before E1: a change the relay delivers while TSKBRWS runs is then skipped in this run
+    // instead of being overwritten with the record that TSKBRWS read before the change.
+    LocalChanges localChanges = LocalChanges.of(outbox.findLatestUnsynced());
     List<String> records = host.browse(); // E1 extract
     List<HostTask> hostTasks = new ArrayList<>();
     for (String record : records) {
@@ -60,7 +63,6 @@ public class EtlJob {
         outcomes.merge(Outcome.REJECTED, 1, Integer::sum);
       }
     }
-    LocalChanges localChanges = LocalChanges.of(outbox.findLatestUnsynced()); // E4
     for (HostTask hostTask : hostTasks) {
       outcomes.merge(load(hostTask, localChanges), 1, Integer::sum); // E5
     }

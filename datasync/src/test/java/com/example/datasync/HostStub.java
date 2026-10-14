@@ -37,6 +37,7 @@ public final class HostStub {
   private final Map<String, Answer> updateAnswers = new ConcurrentHashMap<>();
   private volatile Answer answer;
   private volatile Duration delay = Duration.ZERO;
+  private volatile Runnable whileBrowsing = () -> {};
 
   private HostStub() {
     try {
@@ -70,6 +71,7 @@ public final class HostStub {
     updateAnswers.clear();
     answer = null;
     delay = Duration.ZERO;
+    whileBrowsing = () -> {};
   }
 
   /** Stores records in TSKMSTR as they are, valid or not, keyed by their first 10 characters. */
@@ -125,6 +127,11 @@ public final class HostStub {
     this.delay = delay;
   }
 
+  /** Runs this after TSKBRWS has read TSKMSTR, before it answers, like a concurrent job. */
+  public void whileBrowsing(Runnable action) {
+    whileBrowsing = action;
+  }
+
   private void handle(HttpExchange exchange) throws IOException {
     try {
       String path = exchange.getRequestURI().getPath();
@@ -150,10 +157,16 @@ public final class HostStub {
       return answer;
     }
     return switch (path) {
-      case "/cics/TSKBRWS" -> new Answer(200, String.join("", lines(records())));
+      case "/cics/TSKBRWS" -> browse();
       case "/cics/TSKUPDT" -> update(body);
       default -> new Answer(404, "no such program");
     };
+  }
+
+  private Answer browse() {
+    Answer records = new Answer(200, String.join("", lines(records())));
+    whileBrowsing.run();
+    return records;
   }
 
   private Answer update(String record) {
