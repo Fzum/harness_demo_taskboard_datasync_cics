@@ -19,6 +19,7 @@
 
   <modules>
     <module>cics-host-simulator</module>
+    <module>datasync</module>
   </modules>
 
   <properties>
@@ -26,10 +27,21 @@
     <google-java-format.version>1.23.0</google-java-format.version>
     <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
     <spotless-maven-plugin.version>3.1.0</spotless-maven-plugin.version>
+    <!-- JaCoCo's prepare-agent adds its agent to this. -->
+    <argLine/>
   </properties>
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- Spring Boot's test support initialises Mockito, which attaches its agent at run time;
+               without this flag Java 21 warns about it in every test run. -->
+          <argLine>@{argLine} -XX:+EnableDynamicAgentLoading</argLine>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
