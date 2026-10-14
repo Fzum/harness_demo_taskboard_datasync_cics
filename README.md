@@ -40,10 +40,21 @@ flowchart LR
 You need Java 21 (a JDK), and curl for the examples. Maven comes with the wrapper; the first build
 downloads it.
 
+Build both modules, run all tests and check the formatting:
+
 ```sh
-./mvnw verify                                   # build both modules, run all tests, check the formatting
-./mvnw -pl cics-host-simulator spring-boot:run  # the CICS host simulator, http://localhost:8090
-./mvnw -pl datasync spring-boot:run             # the datasync, http://localhost:8081
+./mvnw verify
+```
+
+Start the CICS host simulator on http://localhost:8090 and the datasync on http://localhost:8081,
+each in its own terminal:
+
+```sh
+./mvnw -pl cics-host-simulator spring-boot:run
+```
+
+```sh
+./mvnw -pl datasync spring-boot:run
 ```
 
 Both apps are ready when their `/actuator/health` answers UP. The datasync works on the shared
@@ -332,23 +343,28 @@ and one deleted with status X.
 
 ### Demo script
 
-With the whole system running (see the next section), in a second terminal:
+With the whole system running (see the next section), in a second terminal. Look at the host's
+records, and run the ETL on request (the first run was at start-up):
 
 ```sh
-# The host's records, and an ETL run on request (the first one ran at start-up)
 curl -s http://localhost:8090/admin/tskmstr
 curl -s -X POST http://localhost:8081/api/sync/etl/run
-
-# A clerk on the host closes H000001003: TSKUPDT writes its record with status D
-curl -s http://localhost:8090/admin/tskmstr/raw | grep '^H000001003' | sed 's/^\(.\{250\}\)./\1D/' | curl -s -X POST http://localhost:8090/cics/TSKUPDT -H 'Content-Type: text/plain' --data-binary @-
-curl -s -X POST http://localhost:8081/api/sync/etl/run      # "updated": 1, the task is DONE in the Taskboard
 ```
 
-Change a task in the Taskboard, then relay it at once instead of waiting up to 30 s:
+A clerk on the host closes H000001003: TSKUPDT writes its record with status D. The next ETL run
+reports `"updated": 1`, and the task is DONE in the Taskboard:
 
 ```sh
-curl -s -X POST http://localhost:8081/api/sync/outbox/run   # "processed": 1
-curl -s http://localhost:8090/admin/tskmstr                 # the host has the change
+curl -s http://localhost:8090/admin/tskmstr/raw | grep '^H000001003' | sed 's/^\(.\{250\}\)./\1D/' | curl -s -X POST http://localhost:8090/cics/TSKUPDT -H 'Content-Type: text/plain' --data-binary @-
+curl -s -X POST http://localhost:8081/api/sync/etl/run
+```
+
+Change a task in the Taskboard, then relay it at once instead of waiting up to 30 s. The relay
+reports `"processed": 1`, and the host has the change:
+
+```sh
+curl -s -X POST http://localhost:8081/api/sync/outbox/run
+curl -s http://localhost:8090/admin/tskmstr
 ```
 
 Take the host down, change a task in the Taskboard again, and run the relay five times:
@@ -356,19 +372,26 @@ Take the host down, change a task in the Taskboard again, and run the relay five
 ```sh
 curl -s -X POST http://localhost:8090/admin/outage -H 'Content-Type: application/json' -d '{"down":true}'
 for i in 1 2 3 4 5; do curl -s -X POST http://localhost:8081/api/sync/outbox/run; echo; done
-curl -s http://localhost:8081/api/sync/inconsistencies      # the FAILED event, with its eventId
-curl -s http://localhost:8081/api/sync/status               # "hostInconsistencies": 1
-curl -s http://localhost:8081/actuator/health               # still UP
 ```
 
 The first four attempts defer the event and the fifth fails it (a scheduled run in between counts
-as an attempt too). End the outage and retry the event:
+as an attempt too). The inconsistencies list the FAILED event with its `eventId`, the status counts
+`"hostInconsistencies": 1`, and the health is still UP:
+
+```sh
+curl -s http://localhost:8081/api/sync/inconsistencies
+curl -s http://localhost:8081/api/sync/status
+curl -s http://localhost:8081/actuator/health
+```
+
+End the outage, retry the event and relay it at once: `"processed": 1`, the task is in sync again.
+Then reset the host to its seed for the next demo:
 
 ```sh
 curl -s -X POST http://localhost:8090/admin/outage -H 'Content-Type: application/json' -d '{"down":false}'
 curl -s -X POST http://localhost:8081/api/sync/inconsistencies/<eventId>/retry
-curl -s -X POST http://localhost:8081/api/sync/outbox/run   # "processed": 1, the task is in sync again
-curl -s -X POST http://localhost:8090/admin/reset           # back to the seed for the next demo
+curl -s -X POST http://localhost:8081/api/sync/outbox/run
+curl -s -X POST http://localhost:8090/admin/reset
 ```
 
 ## Run the whole Taskboard system locally
