@@ -21,14 +21,25 @@ class SchedulingTest {
   private final RunTracker<EtlReport> etlRuns;
   private final RunTracker<RelayReport> outboxRuns;
   private final ThreadPoolTaskScheduler scheduler;
+  private final DatasyncProperties properties;
 
   SchedulingTest(
       RunTracker<EtlReport> etlRuns,
       RunTracker<RelayReport> outboxRuns,
-      ThreadPoolTaskScheduler scheduler) {
+      ThreadPoolTaskScheduler scheduler,
+      DatasyncProperties properties) {
     this.etlRuns = etlRuns;
     this.outboxRuns = outboxRuns;
     this.scheduler = scheduler;
+    this.properties = properties;
+  }
+
+  @Test
+  void runsTheEtlEvery60SecondsAndTheRelayEvery30SecondsByDefault() {
+    assertThat(properties.etl().interval()).isEqualTo(Duration.ofSeconds(60));
+    // up to 100 events per run, and 5 attempts before an event with transient errors fails
+    assertThat(properties.outbox())
+        .isEqualTo(new DatasyncProperties.Outbox(Duration.ofSeconds(30), 100, 5));
   }
 
   @Test
