@@ -21,6 +21,8 @@ import java.util.Optional;
  * @param dueDate TSK-DUE-DATE, null for 00000000
  * @param origin TSK-ORIGIN
  * @param lastUpdate TSK-LAST-UPD
+ * @param priority TSK-PRIO; a blank one (a record from before the field) is read as MEDIUM, and the
+ *     datasync never writes a blank
  */
 public record TskRecord(
     String id,
@@ -30,7 +32,21 @@ public record TskRecord(
     String user,
     LocalDate dueDate,
     Origin origin,
-    Instant lastUpdate) {
+    Instant lastUpdate,
+    Priority priority) {
+
+  /** A record of priority MEDIUM. */
+  public TskRecord(
+      String id,
+      String title,
+      String description,
+      Status status,
+      String user,
+      LocalDate dueDate,
+      Origin origin,
+      Instant lastUpdate) {
+    this(id, title, description, status, user, dueDate, origin, lastUpdate, Priority.MEDIUM);
+  }
 
   public TskRecord {
     Objects.requireNonNull(id, "id");
@@ -40,6 +56,7 @@ public record TskRecord(
     Objects.requireNonNull(user, "user");
     Objects.requireNonNull(origin, "origin");
     Objects.requireNonNull(lastUpdate, "lastUpdate");
+    Objects.requireNonNull(priority, "priority");
   }
 
   /** TSK-STATUS with its 88-level values. */
@@ -87,6 +104,30 @@ public record TskRecord(
 
     static Optional<Origin> ofCode(String code) {
       return Arrays.stream(values()).filter(origin -> origin.code.equals(code)).findFirst();
+    }
+  }
+
+  /** TSK-PRIO with its 88-level values. */
+  public enum Priority {
+    /** TSK-PRIO-HIGH */
+    HIGH("H"),
+    /** TSK-PRIO-MEDIUM */
+    MEDIUM("M"),
+    /** TSK-PRIO-LOW */
+    LOW("L");
+
+    private final String code;
+
+    Priority(String code) {
+      this.code = code;
+    }
+
+    public String code() {
+      return code;
+    }
+
+    static Optional<Priority> ofCode(String code) {
+      return Arrays.stream(values()).filter(priority -> priority.code.equals(code)).findFirst();
     }
   }
 }

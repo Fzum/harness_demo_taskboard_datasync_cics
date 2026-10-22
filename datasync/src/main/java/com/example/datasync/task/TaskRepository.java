@@ -19,7 +19,8 @@ public class TaskRepository {
 
   private static final String SELECT =
       """
-      SELECT ID, HOST_ID, TITLE, DESCRIPTION, STATUS, ASSIGNEE, DUE_DATE, SOURCE, UPDATED_AT
+      SELECT ID, HOST_ID, TITLE, DESCRIPTION, STATUS, ASSIGNEE, DUE_DATE, SOURCE, PRIORITY,
+             UPDATED_AT
       FROM TASK
       """;
 
@@ -49,9 +50,9 @@ public class TaskRepository {
     String insert =
         """
         INSERT INTO TASK (HOST_ID, TITLE, DESCRIPTION, STATUS, ASSIGNEE, DUE_DATE, SOURCE,
-                          CREATED_AT, UPDATED_AT)
+                          PRIORITY, CREATED_AT, UPDATED_AT)
         VALUES (:hostId, :title, :description, :status, :assignee, :dueDate, :source,
-                :updatedAt, :updatedAt)
+                :priority, :updatedAt, :updatedAt)
         """;
     bind(jdbc.sql(insert), task).update();
   }
@@ -61,7 +62,8 @@ public class TaskRepository {
         """
         UPDATE TASK
         SET HOST_ID = :hostId, TITLE = :title, DESCRIPTION = :description, STATUS = :status,
-            ASSIGNEE = :assignee, DUE_DATE = :dueDate, SOURCE = :source, UPDATED_AT = :updatedAt
+            ASSIGNEE = :assignee, DUE_DATE = :dueDate, SOURCE = :source, PRIORITY = :priority,
+            UPDATED_AT = :updatedAt
         WHERE ID = :id
         """;
     bind(jdbc.sql(update), task).param("id", id).update();
@@ -88,6 +90,7 @@ public class TaskRepository {
         .param("assignee", task.assignee())
         .param("dueDate", task.dueDate())
         .param("source", task.source().name())
+        .param("priority", task.priority().name())
         .param("updatedAt", UtcTimestamps.toColumn(task.updatedAt()));
   }
 
@@ -102,6 +105,7 @@ public class TaskRepository {
             row.getString("ASSIGNEE"),
             row.getObject("DUE_DATE", LocalDate.class),
             TaskSource.valueOf(row.getString("SOURCE")),
+            TaskPriority.valueOf(row.getString("PRIORITY")),
             UtcTimestamps.fromColumn(row.getObject("UPDATED_AT", LocalDateTime.class))));
   }
 }

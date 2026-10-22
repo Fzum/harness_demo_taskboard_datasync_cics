@@ -185,7 +185,7 @@ flowchart LR
 | Step | Rule |
 |---|---|
 | E1 Extract | TSKBRWS returns every record of TSKMSTR. The file is small, so every run is a full sync |
-| E2 Decode | Every line is decoded as TSKREC. A record of the wrong length, without key, with an unknown status or origin, or with an invalid due date or timestamp is rejected: logged at WARN with its key and the reason, and not loaded |
+| E2 Decode | Every line is decoded as TSKREC. A record of the wrong length, without key, with an unknown status, origin or priority, or with an invalid due date or timestamp is rejected: logged at WARN with its key and the reason, and not loaded |
 | E3 Transform | Texts are trimmed and blank ones become null; the host values become the Taskboard's (mapping table below). A record the Taskboard cannot hold is rejected too: one without title, or with a user that is not a valid Taskboard user id (`^[a-z][a-z0-9]{0,7}$` once lower-cased) |
 | E4 Skip | Local changes win until they have reached the host: a record is skipped when its task's latest outbox event (highest ID) is PENDING or FAILED. Task id and host key come from those events' payloads, because a task deleted in the Taskboard has no TASK row left to look them up in. That keeps a pending delete from bringing the task back. The ETL reads these events before E1, so a change the relay delivers during the extract is skipped as well, not overwritten with the older record |
 | E5 Load | A record matches the task with its key as HOST_ID; a T key also matches the task with the TASK.ID in the key that has no HOST_ID yet (which then gets it). A match is updated when anything differs, otherwise it is unchanged. Status X deletes the matched task. Without a match, a record from the host (origin H) is inserted with source HOST, its HOST_ID, and CREATED_AT and UPDATED_AT from TSK-LAST-UPD; a record from the Taskboard (origin T) never creates a task, it is orphaned |
@@ -220,6 +220,7 @@ next run catches up, because every run is a full sync.
 | TSK-USER | ASSIGNEE | Lower-cased, blank becomes null | Upper-cased, null becomes blanks |
 | TSK-DUE-DATE | DUE_DATE | `YYYYMMDD` becomes a date, `00000000` null | A date becomes `YYYYMMDD`, null `00000000` |
 | TSK-ORIGIN | SOURCE | `H` becomes `HOST`, `T` becomes `TASKBOARD` | `HOST` becomes `H`, `TASKBOARD` becomes `T` |
+| TSK-PRIO | PRIORITY | `H`, `M`, `L` become `HIGH`, `MEDIUM`, `LOW`, a space `MEDIUM`, anything else rejects the record | `HIGH`, `MEDIUM`, `LOW` become `H`, `M`, `L`; a payload without priority writes `M`, never a space |
 | TSK-LAST-UPD | UPDATED_AT, and CREATED_AT on insert | The host timestamp, as a UTC timestamp | The payload's `occurredAt`, to the microsecond |
 
 A host record is one line, so the relay turns control characters such as line breaks into spaces.

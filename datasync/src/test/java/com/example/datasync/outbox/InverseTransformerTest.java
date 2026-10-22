@@ -40,6 +40,28 @@ class InverseTransformerTest {
                 OCCURRED_AT));
   }
 
+  @org.junit.jupiter.api.Test
+  void mapsEveryPriorityAndReadsAMissingOrNullOneAsMedium() {
+    String withKey = NEW_TASK.replace("\"occurredAt\"", "\"priority\": \"%s\", \"occurredAt\"");
+    assertThat(
+            InverseTransformer.toRecord(event(42, "TASK_CREATED", withKey.formatted("HIGH")))
+                .priority())
+        .isEqualTo(TskRecord.Priority.HIGH);
+    assertThat(
+            InverseTransformer.toRecord(event(42, "TASK_UPDATED", withKey.formatted("LOW")))
+                .priority())
+        .isEqualTo(TskRecord.Priority.LOW);
+    assertThat(
+            InverseTransformer.toRecord(event(42, "TASK_DELETED", withKey.formatted("HIGH")))
+                .priority())
+        .isEqualTo(TskRecord.Priority.HIGH);
+    String nullPriority = withKey.formatted("X").replace("\"X\"", "null");
+    assertThat(InverseTransformer.toRecord(event(42, "TASK_CREATED", nullPriority)).priority())
+        .isEqualTo(TskRecord.Priority.MEDIUM);
+    assertThat(InverseTransformer.toRecord(event(42, "TASK_CREATED", NEW_TASK)).priority())
+        .isEqualTo(TskRecord.Priority.MEDIUM);
+  }
+
   @Test
   void theRecordIsExactlyWhatTskupdtGets() {
     String record =
@@ -56,7 +78,7 @@ class InverseTransformerTest {
                 + "20261031"
                 + "T"
                 + "2026-10-14-08.15.30.123000"
-                + "      ");
+                + "M     ");
   }
 
   @Test

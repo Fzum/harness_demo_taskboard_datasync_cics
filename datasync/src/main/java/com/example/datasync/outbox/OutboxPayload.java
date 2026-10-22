@@ -1,5 +1,6 @@
 package com.example.datasync.outbox;
 
+import com.example.datasync.task.TaskPriority;
 import com.example.datasync.task.TaskSource;
 import com.example.datasync.task.TaskStatus;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -11,7 +12,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * OUTBOX_EVENT.PAYLOAD: a full snapshot of the task after the change (for TASK_DELETED, its last
- * state before the deletion). Empty values are null; unknown keys are ignored.
+ * state before the deletion). Empty values are null; unknown keys are ignored. A missing or null
+ * priority (an event from before the field) is read as MEDIUM.
  *
  * @param hostId the TASK.HOST_ID at the time of the change
  */
@@ -25,6 +27,7 @@ public record OutboxPayload(
     String assignee,
     LocalDate dueDate,
     TaskSource source,
+    TaskPriority priority,
     Instant occurredAt) {
 
   private static final JsonMapper JSON = JsonMapper.shared();

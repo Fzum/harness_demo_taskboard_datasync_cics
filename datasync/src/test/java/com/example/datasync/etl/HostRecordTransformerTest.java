@@ -10,6 +10,7 @@ import com.example.datasync.host.InvalidRecordException;
 import com.example.datasync.host.TskRecord;
 import com.example.datasync.host.TskRecord.Status;
 import com.example.datasync.task.TaskData;
+import com.example.datasync.task.TaskPriority;
 import com.example.datasync.task.TaskSource;
 import com.example.datasync.task.TaskStatus;
 import java.time.LocalDate;
@@ -42,6 +43,25 @@ class HostRecordTransformerTest {
                     LocalDate.of(2026, 10, 31),
                     TaskSource.HOST,
                     LAST_UPDATE)));
+  }
+
+  @ParameterizedTest
+  @CsvSource({"HIGH, HIGH", "MEDIUM, MEDIUM", "LOW, LOW"})
+  void mapsThePriority(com.example.datasync.host.TskRecord.Priority host, TaskPriority taskboard) {
+    var record = hostRecord("H000001001").record();
+    var withPriority =
+        new com.example.datasync.host.TskRecord(
+            record.id(),
+            record.title(),
+            record.description(),
+            record.status(),
+            record.user(),
+            record.dueDate(),
+            record.origin(),
+            record.lastUpdate(),
+            host);
+
+    assertThat(data(withPriority).priority()).isEqualTo(taskboard);
   }
 
   @ParameterizedTest

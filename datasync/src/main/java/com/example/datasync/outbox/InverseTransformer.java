@@ -3,7 +3,9 @@ package com.example.datasync.outbox;
 import com.example.datasync.host.HostKey;
 import com.example.datasync.host.TskRecord;
 import com.example.datasync.host.TskRecord.Origin;
+import com.example.datasync.host.TskRecord.Priority;
 import com.example.datasync.host.TskRecord.Status;
+import com.example.datasync.task.TaskPriority;
 import com.example.datasync.task.TaskSource;
 import com.example.datasync.task.TaskStatus;
 import java.util.Locale;
@@ -14,8 +16,9 @@ import java.util.regex.Pattern;
  * R3, the relay's inverse transformation: the TSK-RECORD that TSKUPDT writes for an outbox event.
  * The key is the payload's hostId, or "T" plus the taskId padded to 9 digits; the user is
  * upper-cased; OPEN, IN_PROGRESS and DONE become O, I and D, and TASK_DELETED writes status X;
- * source HOST becomes origin H and TASKBOARD becomes T; occurredAt becomes TSK-LAST-UPD. Control
- * characters such as line breaks become spaces, since a host record is one line. {@link
+ * source HOST becomes origin H and TASKBOARD becomes T; occurredAt becomes TSK-LAST-UPD; HIGH,
+ * MEDIUM and LOW become TSK-PRIO H, M and L, a missing priority M. Control characters such as line
+ * breaks become spaces, since a host record is one line. {@link
  * com.example.datasync.host.TskRecordCodec} pads the texts and writes the dates.
  */
 final class InverseTransformer {
@@ -57,7 +60,8 @@ final class InverseTransformer {
         task.assignee() == null ? "" : task.assignee().toUpperCase(Locale.ROOT),
         task.dueDate(),
         task.source() == TaskSource.HOST ? Origin.FROM_HOST : Origin.FROM_TASKBOARD,
-        task.occurredAt());
+        task.occurredAt(),
+        priority(task.priority()));
   }
 
   private static Status status(TaskStatus status) {
@@ -65,6 +69,17 @@ final class InverseTransformer {
       case OPEN -> Status.OPEN;
       case IN_PROGRESS -> Status.IN_PROGRESS;
       case DONE -> Status.DONE;
+    };
+  }
+
+  private static Priority priority(TaskPriority priority) {
+    if (priority == null) {
+      return Priority.MEDIUM;
+    }
+    return switch (priority) {
+      case HIGH -> Priority.HIGH;
+      case MEDIUM -> Priority.MEDIUM;
+      case LOW -> Priority.LOW;
     };
   }
 

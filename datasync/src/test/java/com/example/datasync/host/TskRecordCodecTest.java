@@ -33,7 +33,7 @@ class TskRecordCodecTest {
           + "20261031"
           + "H"
           + "2026-10-01-07.42.10.000000"
-          + "      ";
+          + "M     ";
 
   private static final TskRecord RECORD =
       new TskRecord(
@@ -74,7 +74,7 @@ class TskRecordCodecTest {
     assertThat(field(line, Field.TSK_DUE_DATE)).isEqualTo("00000000");
     assertThat(field(line, Field.TSK_DESC)).isEqualTo(" ".repeat(200));
     assertThat(field(line, Field.TSK_USER)).isEqualTo(" ".repeat(8));
-    assertThat(field(line, Field.FILLER)).isEqualTo(" ".repeat(6));
+    assertThat(field(line, Field.FILLER)).isEqualTo(" ".repeat(5));
   }
 
   @Test
@@ -144,6 +144,45 @@ class TskRecordCodecTest {
     assertThatThrownBy(() -> hostRecord("H000001001").title("Call\nback").line())
         .hasMessage("TSK-TITLE contains a control character");
     assertThatThrownBy(() -> hostRecord(" ").line()).hasMessage("TSK-ID is blank");
+  }
+
+  @Test
+  void writesTheCodeOfEveryPriorityAtOffset294() {
+    for (TskRecord.Priority priority : TskRecord.Priority.values()) {
+      TskRecord record =
+          new TskRecord(
+              "H000000001",
+              "t",
+              "",
+              TskRecord.Status.OPEN,
+              "",
+              null,
+              TskRecord.Origin.FROM_HOST,
+              RECORD.lastUpdate(),
+              priority);
+
+      String line = TskRecordCodec.format(record);
+
+      assertThat(line.charAt(294)).isEqualTo(priority.code().charAt(0));
+      assertThat(TskRecordCodec.parse(line).priority()).isEqualTo(priority);
+    }
+  }
+
+  @Test
+  void readsABlankPriorityAsMediumAndNeverWritesOne() {
+    String line = with(LINE, Field.TSK_PRIO, "");
+
+    TskRecord parsed = TskRecordCodec.parse(line);
+
+    assertThat(parsed.priority()).isEqualTo(TskRecord.Priority.MEDIUM);
+    assertThat(field(TskRecordCodec.format(parsed), Field.TSK_PRIO)).isEqualTo("M");
+  }
+
+  @Test
+  void rejectsAnUnknownPriority() {
+    assertThatThrownBy(() -> TskRecordCodec.parse(with(LINE, Field.TSK_PRIO, "Q")))
+        .isInstanceOf(InvalidRecordException.class)
+        .hasMessageContaining("TSK-PRIO 'Q' is not H, M, L or blank");
   }
 
   @Test
