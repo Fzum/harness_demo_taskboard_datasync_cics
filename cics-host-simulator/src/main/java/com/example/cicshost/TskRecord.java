@@ -22,7 +22,8 @@ import java.util.Set;
   "TSK-USER",
   "TSK-DUE-DATE",
   "TSK-ORIGIN",
-  "TSK-LAST-UPD"
+  "TSK-LAST-UPD",
+  "TSK-PRIO"
 })
 public record TskRecord(
     @JsonProperty("TSK-ID") String id,
@@ -32,7 +33,8 @@ public record TskRecord(
     @JsonProperty("TSK-USER") String user,
     @JsonProperty("TSK-DUE-DATE") String dueDate,
     @JsonProperty("TSK-ORIGIN") String origin,
-    @JsonProperty("TSK-LAST-UPD") String lastUpdate) {
+    @JsonProperty("TSK-LAST-UPD") String lastUpdate,
+    @JsonProperty("TSK-PRIO") String priority) {
 
   public static final int LENGTH = 300;
 
@@ -46,7 +48,8 @@ public record TskRecord(
     TSK_DUE_DATE("TSK-DUE-DATE", 259, 8),
     TSK_ORIGIN("TSK-ORIGIN", 267, 1),
     TSK_LAST_UPD("TSK-LAST-UPD", 268, 26),
-    FILLER("FILLER", 294, 6);
+    TSK_PRIO("TSK-PRIO", 294, 1),
+    FILLER("FILLER", 295, 5);
 
     final String copybookName;
     final int offset;
@@ -65,6 +68,7 @@ public record TskRecord(
 
   private static final Set<String> STATUSES = Set.of("O", "I", "D", "X");
   private static final Set<String> ORIGINS = Set.of("H", "T");
+  private static final Set<String> PRIORITIES = Set.of("", "H", "M", "L");
   private static final DateTimeFormatter DUE_DATE =
       DateTimeFormatter.ofPattern("uuuuMMdd").withResolverStyle(ResolverStyle.STRICT);
   private static final DateTimeFormatter LAST_UPD =
@@ -86,7 +90,8 @@ public record TskRecord(
             Field.TSK_USER.read(record),
             Field.TSK_DUE_DATE.read(record),
             Field.TSK_ORIGIN.read(record),
-            Field.TSK_LAST_UPD.read(record));
+            Field.TSK_LAST_UPD.read(record),
+            Field.TSK_PRIO.read(record));
     parsed.check();
     return parsed;
   }
@@ -111,6 +116,9 @@ public record TskRecord(
     if (!isTimestamp(lastUpdate)) {
       throw new InvalidRecordException(
           "TSK-LAST-UPD '" + lastUpdate + "' is not a timestamp YYYY-MM-DD-HH.MM.SS.NNNNNN");
+    }
+    if (!PRIORITIES.contains(priority)) {
+      throw new InvalidRecordException("TSK-PRIO '" + priority + "' is not H, M, L or blank");
     }
   }
 

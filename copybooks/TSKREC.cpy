@@ -14,4 +14,8 @@
                88  TSK-FROM-HOST           VALUE 'H'.
                88  TSK-FROM-TASKBOARD      VALUE 'T'.
            05  TSK-LAST-UPD        PIC X(26).
-           05  FILLER              PIC X(06).
+           05  TSK-PRIO            PIC X(01).
+               88  TSK-PRIO-HIGH           VALUE 'H'.
+               88  TSK-PRIO-MEDIUM         VALUE 'M'.
+               88  TSK-PRIO-LOW            VALUE 'L'.
+           05  FILLER              PIC X(05).

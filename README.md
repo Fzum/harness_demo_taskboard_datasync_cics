@@ -140,7 +140,11 @@ TSKMSTR is a VSAM KSDS keyed by TSK-ID. Each record is a TSK-RECORD of 300 chara
                88  TSK-FROM-HOST           VALUE 'H'.
                88  TSK-FROM-TASKBOARD      VALUE 'T'.
            05  TSK-LAST-UPD        PIC X(26).
-           05  FILLER              PIC X(06).
+           05  TSK-PRIO            PIC X(01).
+               88  TSK-PRIO-HIGH           VALUE 'H'.
+               88  TSK-PRIO-MEDIUM         VALUE 'M'.
+               88  TSK-PRIO-LOW            VALUE 'L'.
+           05  FILLER              PIC X(05).
 ```
 
 | Field | Offset | Length | Content |
@@ -153,7 +157,8 @@ TSKMSTR is a VSAM KSDS keyed by TSK-ID. Each record is a TSK-RECORD of 300 chara
 | TSK-DUE-DATE | 259 | 8 | `YYYYMMDD`, `00000000` for none |
 | TSK-ORIGIN | 267 | 1 | `H` created on the host, `T` created in the Taskboard |
 | TSK-LAST-UPD | 268 | 26 | Host timestamp `YYYY-MM-DD-HH.MM.SS.NNNNNN` in UTC |
-| FILLER | 294 | 6 | Spaces |
+| TSK-PRIO | 294 | 1 | `H` high, `M` medium, `L` low; a space on records from before priorities existed (read as medium, never written as a space). TSKUPDT rejects any other value with RC=12 |
+| FILLER | 295 | 5 | Spaces |
 
 The CICS programs are called over HTTP, the way CICS web services or a CICS Transaction Gateway
 expose them: `POST /cics/<program>` with the COMMAREA as plain text. The real host speaks EBCDIC;
