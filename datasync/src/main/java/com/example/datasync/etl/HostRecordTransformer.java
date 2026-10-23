@@ -3,8 +3,10 @@ package com.example.datasync.etl;
 import com.example.datasync.host.InvalidRecordException;
 import com.example.datasync.host.TskRecord;
 import com.example.datasync.host.TskRecord.Origin;
+import com.example.datasync.host.TskRecord.Priority;
 import com.example.datasync.host.TskRecord.Status;
 import com.example.datasync.task.TaskData;
+import com.example.datasync.task.TaskPriority;
 import com.example.datasync.task.TaskSource;
 import com.example.datasync.task.TaskStatus;
 import java.util.Locale;
@@ -14,8 +16,8 @@ import java.util.regex.Pattern;
  * E3, the ETL's transformation of a decoded host record into the Taskboard's terms: texts trimmed
  * and blank ones null; O, I and D become OPEN, IN_PROGRESS and DONE, X a deletion; TSK-USER is
  * lower-cased into the assignee; origin H becomes source HOST and T becomes TASKBOARD; TSK-LAST-UPD
- * becomes UPDATED_AT. A record the Taskboard cannot hold (no title, a user that is no Taskboard
- * user id) is rejected.
+ * becomes UPDATED_AT; TSK-PRIO H, M and L become HIGH, MEDIUM and LOW, blank MEDIUM. A record the
+ * Taskboard cannot hold (no title, a user that is no Taskboard user id) is rejected.
  */
 final class HostRecordTransformer {
 
@@ -53,6 +55,7 @@ final class HostRecordTransformer {
             assignee,
             record.dueDate(),
             record.origin() == Origin.FROM_HOST ? TaskSource.HOST : TaskSource.TASKBOARD,
+            priority(record.priority()),
             record.lastUpdate()));
   }
 
@@ -62,6 +65,17 @@ final class HostRecordTransformer {
       case IN_PROGRESS -> TaskStatus.IN_PROGRESS;
       case DONE -> TaskStatus.DONE;
       case DELETED -> throw new IllegalArgumentException("a deleted record has no task status");
+    };
+  }
+
+  private static TaskPriority priority(Priority priority) {
+    if (priority == null) {
+      return TaskPriority.MEDIUM;
+    }
+    return switch (priority) {
+      case HIGH -> TaskPriority.HIGH;
+      case MEDIUM -> TaskPriority.MEDIUM;
+      case LOW -> TaskPriority.LOW;
     };
   }
 

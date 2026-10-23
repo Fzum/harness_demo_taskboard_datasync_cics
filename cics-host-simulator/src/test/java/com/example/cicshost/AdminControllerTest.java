@@ -52,7 +52,8 @@ class AdminControllerTest {
                 entry("TSK-USER", "AMUELLER"),
                 entry("TSK-DUE-DATE", "20261031"),
                 entry("TSK-ORIGIN", "H"),
-                entry("TSK-LAST-UPD", "2026-10-01-07.42.10.000000")));
+                entry("TSK-LAST-UPD", "2026-10-01-07.42.10.000000"),
+                entry("TSK-PRIO", "")));
     assertThat(mvc.get().uri("/admin/tskmstr"))
         .bodyJson()
         .extractingPath("$.length()")

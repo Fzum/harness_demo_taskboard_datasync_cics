@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.datasync.host.TskRecord;
 import com.example.datasync.host.TskRecord.Origin;
+import com.example.datasync.host.TskRecord.Priority;
 import com.example.datasync.host.TskRecord.Status;
 import com.example.datasync.host.TskRecordCodec;
 import java.time.Instant;
@@ -25,6 +26,24 @@ class InverseTransformerTest {
        "dueDate": "2026-10-31", "source": "TASKBOARD", "occurredAt": "2026-10-14T08:15:30.123Z"}
       """;
 
+  @ParameterizedTest
+  @CsvSource({"HIGH, HIGH", "MEDIUM, MEDIUM", "LOW, LOW"})
+  void mapsThePayloadPriority(String payload, Priority expected) {
+    String json =
+        NEW_TASK.replace(
+            "\"source\": \"TASKBOARD\",",
+            "\"source\": \"TASKBOARD\", \"priority\": \"" + payload + "\",");
+
+    assertThat(InverseTransformer.toRecord(event(42, "TASK_CREATED", json)).priority())
+        .isEqualTo(expected);
+  }
+
+  @Test
+  void relaysAnEventWithoutPriorityAsMedium() {
+    assertThat(InverseTransformer.toRecord(event(42, "TASK_CREATED", NEW_TASK)).priority())
+        .isEqualTo(Priority.MEDIUM);
+  }
+
   @Test
   void writesANewTaskboardTaskUnderTPlusItsId() {
     assertThat(InverseTransformer.toRecord(event(42, "TASK_CREATED", NEW_TASK)))
@@ -37,7 +56,8 @@ class InverseTransformerTest {
                 "AMUELLER",
                 LocalDate.of(2026, 10, 31),
                 Origin.FROM_TASKBOARD,
-                OCCURRED_AT));
+                OCCURRED_AT,
+                Priority.MEDIUM));
   }
 
   @Test
@@ -56,7 +76,8 @@ class InverseTransformerTest {
                 + "20261031"
                 + "T"
                 + "2026-10-14-08.15.30.123000"
-                + "      ");
+                + "M"
+                + "     ");
   }
 
   @Test
@@ -78,7 +99,8 @@ class InverseTransformerTest {
                 "",
                 null,
                 Origin.FROM_HOST,
-                OCCURRED_AT));
+                OCCURRED_AT,
+                Priority.MEDIUM));
   }
 
   @ParameterizedTest

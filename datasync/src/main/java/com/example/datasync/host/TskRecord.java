@@ -21,6 +21,7 @@ import java.util.Optional;
  * @param dueDate TSK-DUE-DATE, null for 00000000
  * @param origin TSK-ORIGIN
  * @param lastUpdate TSK-LAST-UPD
+ * @param priority TSK-PRIO, null for a blank one (a record from before the field existed)
  */
 public record TskRecord(
     String id,
@@ -30,7 +31,8 @@ public record TskRecord(
     String user,
     LocalDate dueDate,
     Origin origin,
-    Instant lastUpdate) {
+    Instant lastUpdate,
+    Priority priority) {
 
   public TskRecord {
     Objects.requireNonNull(id, "id");
@@ -65,6 +67,30 @@ public record TskRecord(
 
     static Optional<Status> ofCode(String code) {
       return Arrays.stream(values()).filter(status -> status.code.equals(code)).findFirst();
+    }
+  }
+
+  /** TSK-PRIO with its 88-level values; a blank TSK-PRIO is a null priority. */
+  public enum Priority {
+    /** TSK-PRIO-HIGH */
+    HIGH("H"),
+    /** TSK-PRIO-MEDIUM */
+    MEDIUM("M"),
+    /** TSK-PRIO-LOW */
+    LOW("L");
+
+    private final String code;
+
+    Priority(String code) {
+      this.code = code;
+    }
+
+    public String code() {
+      return code;
+    }
+
+    static Optional<Priority> ofCode(String code) {
+      return Arrays.stream(values()).filter(priority -> priority.code.equals(code)).findFirst();
     }
   }
 

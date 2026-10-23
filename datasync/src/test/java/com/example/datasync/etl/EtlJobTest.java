@@ -14,6 +14,7 @@ import com.example.datasync.host.HostUnavailableException;
 import com.example.datasync.host.TskRecord.Status;
 import com.example.datasync.outbox.OutboxStatus;
 import com.example.datasync.task.TaskData;
+import com.example.datasync.task.TaskPriority;
 import com.example.datasync.task.TaskSource;
 import com.example.datasync.task.TaskStatus;
 import java.sql.Timestamp;
@@ -65,6 +66,7 @@ class EtlJobTest {
                 "amueller",
                 LocalDate.of(2026, 10, 31),
                 TaskSource.HOST,
+                TaskPriority.MEDIUM,
                 LAST_UPDATE));
   }
 
@@ -108,6 +110,7 @@ class EtlJobTest {
                 "bkrause",
                 LocalDate.of(2026, 11, 30),
                 TaskSource.HOST,
+                TaskPriority.MEDIUM,
                 later));
     assertThat(db.taskRow(id).get("CREATED_AT")).isEqualTo(createdAt);
   }
@@ -217,6 +220,7 @@ class EtlJobTest {
                 null,
                 null,
                 TaskSource.TASKBOARD,
+                TaskPriority.MEDIUM,
                 LAST_UPDATE));
     host.put(taskboardRecord(HostKey.forTask(id)).title("Call back").line());
 
@@ -277,6 +281,7 @@ class EtlJobTest {
         task.assignee(),
         task.dueDate(),
         task.source(),
+        task.priority(),
         task.updatedAt());
   }
 

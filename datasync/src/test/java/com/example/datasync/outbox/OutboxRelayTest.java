@@ -13,9 +13,11 @@ import com.example.datasync.host.CicsHostClient;
 import com.example.datasync.host.HostKey;
 import com.example.datasync.host.TskRecord;
 import com.example.datasync.host.TskRecord.Origin;
+import com.example.datasync.host.TskRecord.Priority;
 import com.example.datasync.host.TskRecord.Status;
 import com.example.datasync.host.TskRecordCodec;
 import com.example.datasync.task.TaskData;
+import com.example.datasync.task.TaskPriority;
 import com.example.datasync.task.TaskRepository;
 import com.example.datasync.task.TaskSource;
 import com.example.datasync.task.TaskStatus;
@@ -76,7 +78,8 @@ class OutboxRelayTest {
                     "",
                     null,
                     Origin.FROM_TASKBOARD,
-                    db.task(id).updatedAt())));
+                    db.task(id).updatedAt(),
+                    Priority.MEDIUM)));
     OutboxEvent event = event(eventId);
     assertThat(event)
         .extracting(OutboxEvent::status, OutboxEvent::attempts, OutboxEvent::lastError)
@@ -112,7 +115,8 @@ class OutboxRelayTest {
                 before.user(),
                 before.dueDate(),
                 before.origin(),
-                db.task(id).updatedAt()));
+                db.task(id).updatedAt(),
+                Priority.MEDIUM));
     assertThat(db.task(id).hostId()).isEqualTo("H000001001");
   }
 
@@ -282,6 +286,7 @@ class OutboxRelayTest {
             null,
             null,
             TaskSource.TASKBOARD,
+            TaskPriority.MEDIUM,
             HostRecords.LAST_UPDATE));
   }
 
@@ -306,6 +311,7 @@ class OutboxRelayTest {
         task.assignee(),
         task.dueDate(),
         task.source(),
+        task.priority(),
         task.updatedAt());
   }
 
@@ -318,6 +324,7 @@ class OutboxRelayTest {
         task.assignee(),
         task.dueDate(),
         task.source(),
+        task.priority(),
         task.updatedAt());
   }
 }

@@ -1,6 +1,7 @@
 package com.example.datasync.host;
 
 import com.example.datasync.host.TskRecord.Origin;
+import com.example.datasync.host.TskRecord.Priority;
 import com.example.datasync.host.TskRecord.Status;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -29,7 +30,8 @@ public final class TskRecordCodec {
     TSK_DUE_DATE("TSK-DUE-DATE", 259, 8),
     TSK_ORIGIN("TSK-ORIGIN", 267, 1),
     TSK_LAST_UPD("TSK-LAST-UPD", 268, 26),
-    FILLER("FILLER", 294, 6);
+    TSK_PRIO("TSK-PRIO", 294, 1),
+    FILLER("FILLER", 295, 5);
 
     final String copybookName;
     final int offset;
@@ -58,8 +60,8 @@ public final class TskRecordCodec {
   /**
    * Decodes one record.
    *
-   * @throws InvalidRecordException if the record has the wrong length, no key, an unknown status or
-   *     origin, or an invalid due date or timestamp
+   * @throws InvalidRecordException if the record has the wrong length, no key, an unknown status,
+   *     origin or priority, or an invalid due date or timestamp
    */
   public static TskRecord parse(String record) {
     String key = record.substring(0, Math.min(record.length(), Field.TSK_ID.length)).strip();
@@ -78,7 +80,8 @@ public final class TskRecordCodec {
         Field.TSK_USER.read(record),
         dueDate(key, Field.TSK_DUE_DATE.read(record)),
         origin(key, Field.TSK_ORIGIN.read(record)),
-        lastUpdate(key, Field.TSK_LAST_UPD.read(record)));
+        lastUpdate(key, Field.TSK_LAST_UPD.read(record)),
+        priority(key, Field.TSK_PRIO.read(record)));
   }
 
   /**
@@ -108,6 +111,9 @@ public final class TskRecordCodec {
         Field.TSK_LAST_UPD,
         LAST_UPD.format(LocalDateTime.ofInstant(record.lastUpdate(), ZoneOffset.UTC)),
         key);
+    if (record.priority() != null) {
+      put(line, Field.TSK_PRIO, record.priority().code(), key);
+    }
     return line.toString();
   }
 
@@ -134,6 +140,16 @@ public final class TskRecordCodec {
     return Origin.ofCode(code)
         .orElseThrow(
             () -> new InvalidRecordException(key, "TSK-ORIGIN '" + code + "' is not H or T"));
+  }
+
+  private static Priority priority(String key, String code) {
+    if (code.isEmpty()) {
+      return null;
+    }
+    return Priority.ofCode(code)
+        .orElseThrow(
+            () ->
+                new InvalidRecordException(key, "TSK-PRIO '" + code + "' is not H, M, L or blank"));
   }
 
   private static LocalDate dueDate(String key, String value) {
