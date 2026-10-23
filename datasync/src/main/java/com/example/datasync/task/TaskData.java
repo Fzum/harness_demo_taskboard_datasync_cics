@@ -17,4 +17,5 @@ public record TaskData(
     String assignee,
     LocalDate dueDate,
     TaskSource source,
+    TaskPriority priority,
     Instant updatedAt) {}

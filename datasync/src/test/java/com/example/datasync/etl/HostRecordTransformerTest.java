@@ -8,8 +8,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.datasync.host.InvalidRecordException;
 import com.example.datasync.host.TskRecord;
+import com.example.datasync.host.TskRecord.Priority;
 import com.example.datasync.host.TskRecord.Status;
 import com.example.datasync.task.TaskData;
+import com.example.datasync.task.TaskPriority;
 import com.example.datasync.task.TaskSource;
 import com.example.datasync.task.TaskStatus;
 import java.time.LocalDate;
@@ -41,7 +43,20 @@ class HostRecordTransformerTest {
                     "amueller",
                     LocalDate.of(2026, 10, 31),
                     TaskSource.HOST,
+                    TaskPriority.MEDIUM,
                     LAST_UPDATE)));
+  }
+
+  @ParameterizedTest
+  @CsvSource({"HIGH, HIGH", "MEDIUM, MEDIUM", "LOW, LOW"})
+  void mapsThePriority(Priority host, TaskPriority taskboard) {
+    assertThat(data(hostRecord("H000001001").priority(host).record()).priority())
+        .isEqualTo(taskboard);
+  }
+
+  @Test
+  void mapsABlankPriorityToMedium() {
+    assertThat(data(hostRecord("H000001001").record()).priority()).isEqualTo(TaskPriority.MEDIUM);
   }
 
   @ParameterizedTest

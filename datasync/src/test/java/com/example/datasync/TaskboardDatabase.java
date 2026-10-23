@@ -2,6 +2,7 @@ package com.example.datasync;
 
 import com.example.datasync.outbox.OutboxStatus;
 import com.example.datasync.task.TaskData;
+import com.example.datasync.task.TaskPriority;
 import com.example.datasync.task.TaskSource;
 import com.example.datasync.task.TaskStatus;
 import java.time.Duration;
@@ -42,7 +43,16 @@ public final class TaskboardDatabase {
   public long createTask(String title) {
     Instant at = tick();
     TaskData task =
-        new TaskData(null, title, null, TaskStatus.OPEN, null, null, TaskSource.TASKBOARD, at);
+        new TaskData(
+            null,
+            title,
+            null,
+            TaskStatus.OPEN,
+            null,
+            null,
+            TaskSource.TASKBOARD,
+            TaskPriority.MEDIUM,
+            at);
     long id = insertTask(task);
     insertEvent(id, "TASK_CREATED", snapshot(id, task, at));
     return id;
@@ -62,6 +72,7 @@ public final class TaskboardDatabase {
             after.assignee(),
             after.dueDate(),
             before.source(),
+            before.priority(),
             at);
     jdbc.sql(
             """
@@ -152,6 +163,7 @@ public final class TaskboardDatabase {
     payload.put("assignee", task.assignee());
     payload.put("dueDate", task.dueDate() == null ? null : task.dueDate().toString());
     payload.put("source", task.source().name());
+    payload.put("priority", task.priority().name());
     payload.put("occurredAt", occurredAt.toString());
     return JSON.writeValueAsString(payload);
   }
@@ -159,7 +171,8 @@ public final class TaskboardDatabase {
   /** The task's columns that mirror a host record. */
   public TaskData task(long id) {
     return jdbc.sql(
-            "SELECT HOST_ID, TITLE, DESCRIPTION, STATUS, ASSIGNEE, DUE_DATE, SOURCE, UPDATED_AT"
+            "SELECT HOST_ID, TITLE, DESCRIPTION, STATUS, ASSIGNEE, DUE_DATE, SOURCE, PRIORITY,"
+                + " UPDATED_AT"
                 + " FROM TASK WHERE ID = :id")
         .param("id", id)
         .query(
@@ -172,6 +185,7 @@ public final class TaskboardDatabase {
                     row.getString("ASSIGNEE"),
                     row.getObject("DUE_DATE", LocalDate.class),
                     TaskSource.valueOf(row.getString("SOURCE")),
+                    TaskPriority.valueOf(row.getString("PRIORITY")),
                     UtcTimestamps.fromColumn(row.getObject("UPDATED_AT", LocalDateTime.class))))
         .single();
   }

@@ -2,6 +2,7 @@ package com.example.datasync;
 
 import com.example.datasync.host.TskRecord;
 import com.example.datasync.host.TskRecord.Origin;
+import com.example.datasync.host.TskRecord.Priority;
 import com.example.datasync.host.TskRecord.Status;
 import com.example.datasync.host.TskRecordCodec;
 import java.time.Instant;
@@ -20,6 +21,7 @@ public final class HostRecords {
   private LocalDate dueDate;
   private Origin origin = Origin.FROM_HOST;
   private Instant lastUpdate = LAST_UPDATE;
+  private Priority priority;
 
   private HostRecords(String id) {
     this.id = id;
@@ -69,8 +71,14 @@ public final class HostRecords {
     return this;
   }
 
+  public HostRecords priority(Priority priority) {
+    this.priority = priority;
+    return this;
+  }
+
   public TskRecord record() {
-    return new TskRecord(id, title, description, status, user, dueDate, origin, lastUpdate);
+    return new TskRecord(
+        id, title, description, status, user, dueDate, origin, lastUpdate, priority);
   }
 
   /** The record in its fixed-width form. */

@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.datasync.HostRecords;
 import com.example.datasync.host.TskRecord.Origin;
+import com.example.datasync.host.TskRecord.Priority;
 import com.example.datasync.host.TskRecord.Status;
 import com.example.datasync.host.TskRecordCodec.Field;
 import java.io.IOException;
@@ -33,7 +34,8 @@ class TskRecordCodecTest {
           + "20261031"
           + "H"
           + "2026-10-01-07.42.10.000000"
-          + "      ";
+          + "H"
+          + "     ";
 
   private static final TskRecord RECORD =
       new TskRecord(
@@ -44,7 +46,8 @@ class TskRecordCodecTest {
           "AMUELLER",
           LocalDate.of(2026, 10, 31),
           Origin.FROM_HOST,
-          Instant.parse("2026-10-01T07:42:10Z"));
+          Instant.parse("2026-10-01T07:42:10Z"),
+          Priority.HIGH);
 
   private static final TskRecord SPARSE =
       new TskRecord(
@@ -55,11 +58,38 @@ class TskRecordCodecTest {
           "",
           null,
           Origin.FROM_TASKBOARD,
-          Instant.parse("2026-10-14T08:15:30.123456Z"));
+          Instant.parse("2026-10-14T08:15:30.123456Z"),
+          null);
 
   @Test
   void parsesEveryFieldWithoutItsPadding() {
     assertThat(TskRecordCodec.parse(LINE)).isEqualTo(RECORD);
+  }
+
+  @ParameterizedTest
+  @CsvSource({"H, HIGH", "M, MEDIUM", "L, LOW"})
+  void roundTripsThePriority(String code, Priority priority) {
+    String line = LINE.substring(0, 294) + code + LINE.substring(295);
+
+    assertThat(TskRecordCodec.parse(line).priority()).isEqualTo(priority);
+    assertThat(TskRecordCodec.format(TskRecordCodec.parse(line))).isEqualTo(line);
+  }
+
+  @Test
+  void readsABlankPriorityAsNone() {
+    String line = LINE.substring(0, 294) + " " + LINE.substring(295);
+
+    assertThat(TskRecordCodec.parse(line).priority()).isNull();
+  }
+
+  @ParameterizedTest
+  @CsvSource({"X", "h", "1"})
+  void rejectsAnyOtherPriority(String code) {
+    String line = LINE.substring(0, 294) + code + LINE.substring(295);
+
+    assertThatThrownBy(() -> TskRecordCodec.parse(line))
+        .isInstanceOf(InvalidRecordException.class)
+        .hasMessageContaining("TSK-PRIO '" + code + "' is not H, M, L or blank");
   }
 
   @Test
@@ -74,7 +104,8 @@ class TskRecordCodecTest {
     assertThat(field(line, Field.TSK_DUE_DATE)).isEqualTo("00000000");
     assertThat(field(line, Field.TSK_DESC)).isEqualTo(" ".repeat(200));
     assertThat(field(line, Field.TSK_USER)).isEqualTo(" ".repeat(8));
-    assertThat(field(line, Field.FILLER)).isEqualTo(" ".repeat(6));
+    assertThat(field(line, Field.FILLER)).isEqualTo(" ".repeat(5));
+    assertThat(field(line, Field.TSK_PRIO)).isEqualTo(" ");
   }
 
   @Test
